@@ -2,7 +2,7 @@
 
 *Stop writing custom parsers for every data format. Flatten anything.*
 
-[![PyPI version](https://badge.fury.io/py/flatten-anything.svg)](https://badge.fury.io/py/flatten-anything)
+[![PyPI](https://img.shields.io/pypi/v/flatten-anything?color=blue)](https://pypi.org/project/flatten-anything/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

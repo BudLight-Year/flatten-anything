@@ -2,7 +2,6 @@
 Utility functions for FlattenAnything
 """
 
-
 def check_optional_dependency(package_name: str, feature_name: str):
     """
     Check if optional dependency is installed.

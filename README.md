@@ -3,7 +3,7 @@
 *Stop writing custom parsers for every data format. Flatten anything.*
 
 [![PyPI](https://img.shields.io/pypi/v/flatten-anything?color=blue)](https://pypi.org/project/flatten-anything/)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## The Problem
@@ -11,7 +11,6 @@
 Every data pipeline starts the same way: "I have this nested JSON file, and I need to flatten it." Then next week: "Now it's XML." Then: "The client sent Excel files." Before you know it, you have 200 lines of custom parsing code for each format.
 
 ## The Solution
-
 ```python
 from flatten_anything import flatten, ingest
 
@@ -20,7 +19,29 @@ data = ingest('your_nightmare_file.json')
 flat = flatten(data)
 ```
 
-**It just works.** No matter what garbage is in your file.
+**It just works.** No matter what format. No matter how nested.
+
+## What's New in v1.1
+
+### 🚀 Streaming Support
+Process files larger than memory without breaking a sweat:
+```python
+# Stream a 10GB CSV file
+for chunk in ingest('huge_file.csv', stream=True):
+    flat = flatten(chunk)
+    # Process each chunk without loading entire file
+```
+
+### 🎯 Smarter Flattening
+New `records` parameter intelligently handles multiple records:
+```python
+# Automatically flattens each record separately (new default!)
+data = ingest('users.csv')
+flat = flatten(data)  # Returns list of flattened records
+
+# Or treat as single structure when needed
+flat = flatten(data, records=False)  # Flattens entire structure
+```
 
 ## Installation
 
@@ -42,36 +63,41 @@ pip install flatten-anything[excel]
 pip install flatten-anything[all]
 ```
 
-### What's Included
+### Format Support Matrix
 
-| Format | Core Install | Optional Install |
-|--------|-------------|------------------|
-| JSON/JSONL | ✅ Included | - |
-| CSV/TSV | ✅ Included | - |
-| YAML | ✅ Included | - |
-| XML | ✅ Included | - |
-| API/URLs | ✅ Included | - |
-| Parquet | ❌ | `pip install flatten-anything[parquet]` |
-| Excel | ❌ | `pip install flatten-anything[excel]` |
-
-The core package is kept lightweight (~35MB) while Parquet and Excel support can add ~100MB+ if you need them.
+| Format | Core Install | Optional Install | Streaming |
+|--------|-------------|------------------|-----------|
+| JSON/JSONL | ✅ Included | - | ✅ JSONL only |
+| CSV/TSV | ✅ Included | - | ✅ Yes |
+| YAML | ✅ Included | - | ❌ No |
+| XML | ✅ Included | - | ❌ No |
+| API/URLs | ✅ Included | - | ❌ No |
+| Parquet | ❌ | `pip install flatten-anything[parquet]` | ✅ Yes |
+| Excel | ❌ | `pip install flatten-anything[excel]` | ❌ No |
 
 ## Quick Start
 
-### Flatten nested JSON
+### Basic Usage
 ```python
 from flatten_anything import flatten, ingest
 
 # Load any supported file format
-data = ingest('deeply_nested.json')
+data = ingest('data.json')
 
-# Flatten it
+# Flatten it (automatically handles single vs multiple records)
 flat = flatten(data)
-
-# {'user.name': 'John', 'user.address.city': 'NYC', 'user.scores.0': 100}
 ```
 
-### Real-world example
+### Streaming Large Files
+```python
+# Process huge files in chunks
+for chunk in ingest('massive.csv', stream=True, chunk_size=10000):
+    flat_records = flatten(chunk)
+    # Process chunk (e.g., write to database, analyze, etc.)
+    process_records(flat_records)
+```
+
+### Real-world Example
 ```python
 # Your horrible nested JSON
 data = {
@@ -101,121 +127,90 @@ flat = flatten(data)
 # }
 ```
 
-### Works with any format
+### Multiple Records Handling
 ```python
-# JSON
-data = ingest('data.json')
+# CSV data with multiple records
+users = [
+    {"name": "Alice", "age": 30, "city": "NYC"},
+    {"name": "Bob", "age": 25, "city": "LA"}
+]
 
-# CSV  
-data = ingest('data.csv')
+# Default: flatten each record (records=True)
+flat = flatten(users)
+# [
+#     {"name": "Alice", "age": 30, "city": "NYC"},
+#     {"name": "Bob", "age": 25, "city": "LA"}
+# ]
 
-# Parquet
-data = ingest('data.parquet')
-
-# Excel
-data = ingest('data.xlsx')
-
-# XML
-data = ingest('data.xml')
-
-# YAML
-data = ingest('config.yaml')
-
-# All flatten the same way
-flat = flatten(data)
+# Flatten as single structure (records=False)
+flat = flatten(users, records=False)
+# {
+#     "0.name": "Alice", "0.age": 30, "0.city": "NYC",
+#     "1.name": "Bob", "1.age": 25, "1.city": "LA"
+# }
 ```
-
-## Supported Formats
-
-| Format | Extensions | Status |
-|--------|-----------|---------|
-| JSON | `.json` | ✅ Fully supported |
-| JSONL | `.jsonl` | ✅ Fully supported |
-| CSV | `.csv`, `.tsv` | ✅ Fully supported |
-| Parquet | `.parquet`, `.parq` | ✅ Fully supported |
-| Excel | `.xlsx`, `.xls` | ✅ Fully supported |
-| XML | `.xml` | ✅ Fully supported |
-| YAML | `.yaml`, `.yml` | ✅ Fully supported |
-
-## Why Flatten Anything?
-
-- **Zero configuration** - No schemas, no options, just works
-- **Production ready** - Handle nulls, mixed types, empty arrays without crashing
-- **Actually tested** - On real messy production data, not toy examples
-- **Minimal dependencies** - Just the essentials (pandas, pyyaml, etc.)
-- **One job** - Flatten data. That's it. No bloat.
 
 ## Advanced Usage
-
-### Control the output structure
-```python
-# Have multiple records? Each gets flattened
-data = ingest('multiple_records.json')  # List of records
-flattened_records = [flatten(record) for record in data]
-```
 
 ### Integrate with pandas
 ```python
 import pandas as pd
 
-# Flatten and convert to DataFrame
-data = ingest('nested_data.json')
+# Method 1: Load entire file
+data = ingest('data.csv')
 flat = flatten(data)
-df = pd.DataFrame([flat])
+df = pd.DataFrame(flat)
+
+# Method 2: Stream large files
+dfs = []
+for chunk in ingest('huge.csv', stream=True, chunk_size=5000):
+    flat_chunk = flatten(chunk)
+    dfs.append(pd.DataFrame(flat_chunk))
+final_df = pd.concat(dfs, ignore_index=True)
 ```
 
-### Pipeline ready
+### Control Empty Lists
 ```python
-# Chain with your existing workflow
-for filename in Path('data/').glob('*.json'):
-    data = ingest(filename)
-    flat = flatten(data)
-    # Your analysis here
-    process_data(flat)
+data = {"items": [], "count": 0}
+
+# Preserve empty lists (default)
+flatten(data, preserve_empty_lists=True)
+# {"items": [], "count": 0}
+
+# Remove empty lists
+flatten(data, preserve_empty_lists=False)
+# {"count": 0}
 ```
 
-## Use Cases
+### Memory-Efficient Pipeline
+```python
+from pathlib import Path
 
-- **Data Engineering**: Normalize data lakes with mixed formats
-- **ETL Pipelines**: Consistent structure regardless of source format  
-- **Data Analysis**: Flatten nested JSON APIs into DataFrames
-- **Log Processing**: Convert nested log formats to flat structures
-- **Config Management**: Flatten complex YAML/JSON configs for validation
+# Process directory of large files without memory issues
+for filepath in Path('data/').glob('*.csv'):
+    for chunk in ingest(filepath, stream=True):
+        flat = flatten(chunk)
+        # Process and immediately discard to save memory
+        send_to_database(flat)
+```
 
-## FAQ
+## API Reference
 
-**Q: What happens with null values?**  
-A: They're preserved. `{'a': {'b': null}}` becomes `{'a.b': None}`
+### ingest()
+```python
+ingest(source, format=None, stream=False, chunk_size=5000, **kwargs)
+```
+- `source`: File path or URL to ingest
+- `format`: Optional format override. Auto-detected if not specified
+- `stream`: Enable streaming for large files (supported formats only)
+- `chunk_size`: Records per chunk when streaming
+- Returns: List of records or generator if streaming
 
-**Q: What about empty arrays?**  
-A: They're kept. `{'items': []}` becomes `{'items': []}`
-
-**Q: Can it handle huge files?**  
-A: Currently loads into memory. Streaming support coming in v1.1.
-
-**Q: What if my JSON has inconsistent structure?**  
-A: It still works. Missing keys are simply not included in the output.
-
-## Contributing
-
-Found a bug? File that doesn't flatten? Open an issue with a sample file.
-
-PRs welcome, especially for:
-- More file formats
-- Performance improvements  
-- Edge case handling
-
-## License
-
-MIT - Use it however you want.
-
-## Roadmap
-
-- ✅ v1.0 - Core flattening for common formats
-- 🔄 v1.1 - Streaming support for large files
-- 📋 v1.2 - API endpoint support with pagination
-- 🔮 v1.3 - HDF5 and scientific formats
-
----
-
-*Built with frustration at writing the same parsing code for the 100th time.*
+### flatten()
+```python
+flatten(data, prefix="", preserve_empty_lists=True, records=True)
+```
+- `data`: Data structure to flatten
+- `prefix`: Key prefix (used internally for recursion)
+- `preserve_empty_lists`: Keep or remove empty lists
+- `records`: Treat list as multiple records (True) or single structure (False)

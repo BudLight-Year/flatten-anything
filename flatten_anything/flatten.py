@@ -2,7 +2,8 @@ from collections import deque
 from pathlib import Path
 
 
-def flatten(data, prefix: str = "", preserve_empty_lists: bool = True):
+def flatten(data, prefix: str = "", preserve_empty_lists: bool = True, 
+            records: bool = True):
     """Transform nested data structures into flat key-value pairs using dot notation.
 
     Handles arbitrary nesting of dicts and lists, converting them into a flat
@@ -14,29 +15,41 @@ def flatten(data, prefix: str = "", preserve_empty_lists: bool = True):
         prefix: Key prefix for recursion (typically left empty by caller)
         preserve_empty_lists: If True, empty lists are preserved as values.
                              If False, empty lists are removed from output.
+        records: If True and data is a list, flatten each item separately.
+                If False, flatten the entire structure as one.
+                Default True (common case for CSV, JSONL, etc.)
 
     Returns:
-        Dict with dot-notation keys mapping to leaf values
+        If records=True and data is list: List of flattened dicts (one per record)
+        Otherwise: Dict with dot-notation keys mapping to leaf values
 
     Examples:
+        >>> # Default behavior - treats lists as multiple records
+        >>> flatten([{'name': 'Alice'}, {'name': 'Bob'}])
+        [{'name': 'Alice'}, {'name': 'Bob'}]
+        
+        >>> # Single structure mode
+        >>> flatten([{'name': 'Alice'}, {'name': 'Bob'}], records=False)
+        {'0.name': 'Alice', '1.name': 'Bob'}
+
+        >>> # Dict always flattens as single structure
         >>> flatten({'user': {'name': 'Alice', 'age': 30}})
         {'user.name': 'Alice', 'user.age': 30}
 
-        >>> flatten({'items': [{'id': 1}, {'id': 2}]})
-        {'items.0.id': 1, 'items.1.id': 2}
-
-        >>> flatten([10, 20, 30])
-        {'0': 10, '1': 20, '2': 30}
-
-        >>> flatten({'tags': []})
-        {'tags': []}  # With preserve_empty_lists=True
-
-        >>> flatten({'tags': []}, preserve_empty_lists=False)
-        {}  # With preserve_empty_lists=False
+        >>> # Common pattern with ingest
+        >>> data = ingest('users.csv')  # Returns list of records
+        >>> flat = flatten(data)  # Automatically handles as records
     """
+    # Handle record mode (default behavior for lists)
+    if records and isinstance(data, list) and not prefix:
+        # Flatten each item in the list separately
+        return [flatten(item, preserve_empty_lists=preserve_empty_lists, 
+                       records=False) for item in data]
+    
+    # Single structure flattening (original logic)
     if not prefix and not isinstance(data, (dict, list)):
         raise TypeError(
-            f"Cannot flatten {type(data).__name__} at root level"
+            f"Cannot flatten {type(data).__name__} at root level. "
             f"Expected dict or list. Got: {data!r}"
         )
 
@@ -60,7 +73,6 @@ def flatten(data, prefix: str = "", preserve_empty_lists: bool = True):
                     final_key = current_prefix.rstrip(".")
                     if final_key:
                         result[final_key] = []
-                # else: skip empty lists (don't add to results)
             else:
                 for i, v in enumerate(current_data):
                     new_prefix = f"{current_prefix}{i}."

@@ -196,7 +196,7 @@ class TestComplexFlatten:
             },
             {"items": []},
         ]
-        result = flatten(data)
+        result = flatten(data, records = False)
 
         assert result["0.items.0.subitems.0.value"] == 1
         assert result["0.items.0.subitems.1.value"] == 2

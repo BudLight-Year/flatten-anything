@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="flatten-anything",
-    version="1.1.0",
+    version="1.1.1",
     author="Evan Cline",
     author_email="totallysweethobo@gmail.com",
     description="Stop writing custom parsers for every data format. Flatten anything.",

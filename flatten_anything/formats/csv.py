@@ -6,8 +6,12 @@ from pathlib import Path
 from typing import Dict, List, Any, Generator
 
 
-def ingest_csv(filepath: Path, stream: bool = False, 
-               chunk_size: int = 5000, **kwargs) -> List[Dict[str, Any]] | Generator[List[Dict[str, Any]], None, None]:
+def ingest_csv(
+    filepath: Path,
+    stream: bool = False, 
+    chunk_size: int = 5000,
+    **kwargs
+) -> List[Dict[str, Any]] | Generator[List[Dict[str, Any]], None, None]:
     """
     Ingest CSV file and convert to list of dictionaries.
     

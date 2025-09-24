@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Generator
 def ingest_json(
     filepath: Path, 
     stream: bool = False,
-    chunk_size: int = 1000, 
+    chunk_size: int = 5000, 
     **kwargs
 ) -> List[Dict[str, Any]] | Generator[List[Dict[str, Any]], None, None]:
     """

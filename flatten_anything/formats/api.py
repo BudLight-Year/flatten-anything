@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 def ingest_api(
     url: str,
     stream: bool = False,
+    chunk_size: int = None,
     headers: Dict[str, str] | None = None,
     params: Dict[str, Any] | None = None,
     timeout: int = 30,
